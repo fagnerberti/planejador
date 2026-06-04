@@ -616,11 +616,10 @@ function renderRel(){
     <div class="sb"><div class="sn">${done}</div><div class="sl">Concluídas</div></div>
     <div class="sb"><div class="sn">${(totalMin/60).toFixed(1)}h</div><div class="sl">Horas plan.</div></div>
   `;
-  // 24h bar
+  // 24h bar — só tarefas concluídas no dia
   const DAY_MIN=1440;
-  // group by area, calc minutes
   const areaMin={};
-  tasks.forEach(t=>{
+  tasks.filter(t=>isDone(t,relOff)).forEach(t=>{
     const proj=PROJECTS.find(p=>p.id===t.project_id);
     const area=proj?proj.area:'Pessoal';
     areaMin[area]=(areaMin[area]||0)+parseInt(t.duracao);
