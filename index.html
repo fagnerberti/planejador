@@ -702,8 +702,8 @@ function selTipo(v){
 function selPrio(v){ document.querySelectorAll('.prio-sel .psel-btn').forEach(b=>{b.classList.remove('sel-alta','sel-media','sel-baixa'); if(b.dataset.v===v) b.classList.add('sel-'+v);}); }
 function toggleDia(d){ document.querySelector(`.dia-btn[data-d="${d}"]`).classList.toggle('active'); }
 
-function getSelTipo(){ return document.querySelector('.tipo-sel .psel-btn[class*="sel-"]')?.dataset.v||'pontual'; }
-function getSelPrio(){ return document.querySelector('.prio-sel .psel-btn[class*="sel-"]')?.dataset.v||'media'; }
+function getSelTipo(){ const b=document.querySelector(".tipo-sel .psel-btn.sel-pontual,.tipo-sel .psel-btn.sel-recorrente"); return b?b.dataset.v:"pontual"; }
+function getSelPrio(){ const b=document.querySelector(".prio-sel .psel-btn.sel-alta,.prio-sel .psel-btn.sel-media,.prio-sel .psel-btn.sel-baixa"); return b?b.dataset.v:"media"; }
 function getSelDias(){ return [...document.querySelectorAll('.dia-btn.active')].map(b=>b.dataset.d); }
 
 async function saveTask(){
@@ -732,7 +732,7 @@ async function saveTask(){
   const updatePayload={title,hora,duracao,tipo,prioridade,project_id,start_date,end_date,dias_semana:diasNorm};
   const insertPayload={...updatePayload,done_on:[],user_id:USER.id};
   if(editingTaskId){
-    const {data,error}=await sb.from('tasks').update(updatePayload).eq('id',editingTaskId).eq('user_id',USER.id).select().single();
+    const {data,error}=await sb.from('tasks').update(updatePayload).eq('id',editingTaskId).eq('user_id',USER.id).select().single(); console.log('UPDATE resultado:',{data,error,editingTaskId,updatePayload});
     if(error){errEl.textContent='Erro ao salvar: '+error.message;btn.disabled=false;return;}
     const idx=TASKS.findIndex(x=>x.id===editingTaskId);
     if(idx>-1&&data) TASKS[idx]={...TASKS[idx],...data};
