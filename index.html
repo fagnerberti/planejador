@@ -482,7 +482,7 @@ function taskActiveOnDay(t, o){
   // recorrente
   const d = getDay(o);
   const dow = d.getDay(); // 0=dom..6=sab
-  const dias = t.dias_semana||[];
+  const dias = (t.dias_semana||[]).map(String);
   return dias.includes(String(dow));
 }
 
@@ -497,10 +497,13 @@ async function toggleDone(id){
   const t=TASKS.find(x=>x.id===id); if(!t) return;
   const key=dk(dayOff);
   let done_on=[...(t.done_on||[])];
-  if(done_on.includes(key)) done_on=done_on.filter(d=>d!==key);
-  else { done_on.push(key); showToast('✓ Concluída!'); }
-  await sb.from('tasks').update({done_on}).eq('id',id);
-  t.done_on=done_on;
+  const wasDone=done_on.includes(key);
+  if(wasDone) done_on=done_on.filter(d=>d!==key);
+  else { done_on.push(key); showToast("✓ Concluída!"); }
+  const {data,error}=await sb.from("tasks").update({done_on}).eq("id",id).eq("user_id",USER.id).select().single();
+  if(error){ showToast("Erro ao salvar."); return; }
+  const idx=TASKS.findIndex(x=>x.id===id);
+  if(idx>-1&&data) TASKS[idx]={...TASKS[idx],...data};
   renderDay(); renderRel();
 }
 
@@ -724,14 +727,19 @@ async function saveTask(){
   if(tipo==='recorrente'&&!dias_semana.length){errEl.textContent='Selecione ao menos um dia da semana.';return;}
   errEl.textContent='';
   const btn=document.getElementById('t-save-btn'); btn.disabled=true;
-  const payload={title,hora,duracao,tipo,prioridade,project_id,start_date,end_date,dias_semana,user_id:USER.id};
+  // dias_semana como array de strings normalizado
+  const diasNorm = dias_semana.map(String);
+  const updatePayload={title,hora,duracao,tipo,prioridade,project_id,start_date,end_date,dias_semana:diasNorm};
+  const insertPayload={...updatePayload,done_on:[],user_id:USER.id};
   if(editingTaskId){
-    const {data}=await sb.from('tasks').update(payload).eq('id',editingTaskId).select().single();
+    const {data,error}=await sb.from('tasks').update(updatePayload).eq('id',editingTaskId).eq('user_id',USER.id).select().single();
+    if(error){errEl.textContent='Erro ao salvar: '+error.message;btn.disabled=false;return;}
     const idx=TASKS.findIndex(x=>x.id===editingTaskId);
     if(idx>-1&&data) TASKS[idx]={...TASKS[idx],...data};
     showToast('Tarefa atualizada!');
   } else {
-    const {data}=await sb.from('tasks').insert({...payload,done_on:[]}).select().single();
+    const {data,error}=await sb.from('tasks').insert(insertPayload).select().single();
+    if(error){errEl.textContent='Erro ao criar: '+error.message;btn.disabled=false;return;}
     if(data) TASKS.push(data);
     showToast('Tarefa criada!');
   }
